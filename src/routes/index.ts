@@ -9,7 +9,7 @@ const router = express.Router();
 
 /* GET home page. */
 router.get('/', (_req, res) => {
-  res.json({ title: 'Express' });
+  res.json({ message: 'Welsome to Auto Check Hacker News API task' });
 });
 
 router.get('/t10-last-25', lastTwentyFive);
