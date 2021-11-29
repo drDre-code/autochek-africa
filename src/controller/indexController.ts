@@ -38,10 +38,9 @@ export const last600Stories = async (_req: Request, res: Response) => {
   try {
     const allStory = await getAllStory();
     const select600: Story[] = allStory.slice(0, 600);
-    const validatedStory = await karmaBasedValidation(select600);
+    const titlesOfvalidatedStory = await karmaBasedValidation(select600);
+    const top10 = await getTop10(titlesOfvalidatedStory);
 
-    const titles = validatedStory.map((story) => story.title);
-    const top10 = await getTop10(titles);
     res.status(200).json(top10);
   } catch (e) {
     const message = (e as Error).message || e;

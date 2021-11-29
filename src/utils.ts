@@ -1,10 +1,16 @@
 import axios, { AxiosResponse } from 'axios';
+import NodeCache from 'node-cache';
 
 export interface Story {
   title: string;
   [key: string]: number | string | number[];
 }
+
+const myCache = new NodeCache();
+
 const getAllStoryIDs = async (): Promise<number[]> => {
+  const data = myCache.get('uniqueIDs');
+  if (data) return data as number[];
   const urls = [
     'https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty',
     'https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty',
@@ -17,10 +23,13 @@ const getAllStoryIDs = async (): Promise<number[]> => {
   const response = await Promise.all(value);
   const allIDs: number[] = response.map((item) => item.data).flat();
   const uniqueIDs = [...new Set(allIDs)];
+  myCache.set('uniqueIDs', uniqueIDs, 60 * 5); // store data in cache for 5mins
   return uniqueIDs;
 };
 
-export const getAllStory = async () => {
+export const getAllStory = async (): Promise<Story[]> => {
+  const data = myCache.get('allStories');
+  if (data) return data as Story[];
   const ids = await getAllStoryIDs();
   const storyPromise = ids.map((id: number) =>
     axios.get(
@@ -36,6 +45,7 @@ export const getAllStory = async () => {
   )
     .map(({ value }) => value.data)
     .sort((a, b) => b.time - a.time);
+  myCache.set('allStories', validStory, 60 * 5); // store data in cache for 5mins
   return validStory;
 };
 
@@ -67,8 +77,10 @@ export const getTop10 = async (input: string[]) => {
     const indexOfMax = values.indexOf(Math.max(...values));
     const value = values.splice(indexOfMax, 1)[0];
     const word = uniqueWords.splice(indexOfMax, 1)[0];
-    output[word] = value;
-    count++;
+    if (word !== '') {
+      output[word] = value;
+      count++;
+    }
   }
   return output;
 };
@@ -84,13 +96,18 @@ export const karmaBasedValidation = async (stories: Story[]) => {
     userInfo,
   )) as PromiseFulfilledResult<AxiosResponse>[];
   // Filter stories whose user has 10000 or more karma
-  const output = stories.filter((_story, index) => {
-    const userResponse = usersData[index];
-    if (userResponse.status === 'fulfilled' && userResponse.value.data) {
-      const { karma } = userResponse.value.data;
-      if (karma >= 10000) return true;
-    }
-    return false;
-  });
+  const output = stories.reduce(
+    (acc: string[], story: Story, index: number) => {
+      const userResponse = usersData[index];
+      if (userResponse.status === 'fulfilled' && userResponse.value.data) {
+        const { karma } = userResponse.value.data;
+        if (karma >= 10000) {
+          acc.push(story.title);
+        }
+      }
+      return acc;
+    },
+    [],
+  );
   return output;
 };
