@@ -26,8 +26,8 @@ describe('Testing all routes to ensure the response code is 200 and the body is 
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(200);
-    jest.setTimeout(30 * 1000);
-  }, 30000);
+    jest.setTimeout(40 * 1000);
+  }, 40000);
 });
 
 describe('The Body Object should not contain more than 10 keys ', () => {
@@ -52,6 +52,6 @@ describe('The Body Object should not contain more than 10 keys ', () => {
     const { body } = res;
     const responselength = Object.keys(body).length;
     expect(responselength).toBeLessThanOrEqual(10);
-    jest.setTimeout(30 * 1000);
-  }, 30000);
+    jest.setTimeout(40 * 1000);
+  }, 40000);
 });
